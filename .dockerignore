@@ -1,0 +1,6 @@
+public/**
+publiclab.org/**
+log/**
+.git
+.dockerignore
+Gemfile.lock
