@@ -21,11 +21,10 @@ end
 class Node < ActiveRecord::Base
   include NodeShared # common methods for node-like models
 
-  attr_accessible :title, :uid, :status, :type, :vid, :cached_likes, :comment, :path, :slug, :views
   self.table_name = 'node'
   self.primary_key = 'nid'
 
-  def self.search(query, order = :default)
+  def self.search(query:, order: :default, limit:)
     orderParam = {changed: :desc} if order == :default
     orderParam = {cached_likes: :desc} if order == :likes
     orderParam = {views: :desc} if order == :views
@@ -44,7 +43,8 @@ class Node < ActiveRecord::Base
       end
     else
       nodes = Node.limit(limit)
-        .where('title LIKE ?', '%' + input + '%', status: 1)
+        .where('title LIKE ?', '%' + query + '%')
+        .where(status: 1)
         .order(orderParam)
     end
   end
@@ -98,7 +98,7 @@ class Node < ActiveRecord::Base
 
   before_save :set_changed_and_created
   after_create :setup
-  before_validation :set_path, on: :create
+  before_validation :set_path_and_slug, on: :create
 
   # can switch to a "question-style" path if specified
   def path(type = :default)
@@ -127,8 +127,9 @@ class Node < ActiveRecord::Base
 
   private
 
-  def set_path
+  def set_path_and_slug
     self.path = generate_path if path.blank? && !title.blank?
+    self.slug = self.path.split('/').last unless self.path.blank?
   end
 
   def set_changed_and_created
